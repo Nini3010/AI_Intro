@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "ai-ue"
+version = "0.1.0"
+description = ""
+authors = ["Stefan Wesely <stefan.wesely@stud.fh-campuswien.ac.at>"]
+readme = "README.md"
+
+exclude = [
+    "**/__pycache__",
+    "**/.mypy_cache",
+    "**/.pytest_cache",
+    "**/.ruff_cache",
+    "**/.idea",
+    "**/.git",
+    "**/.ipynb_checkpoints",
+    "**/_MACOSX",
+    "**/.DS_Store",
+    "**/coverage.xml",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^2.1.3"
+jupyterlab = "^4.3.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+ruff = "^0.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+# see https://beta.ruff.rs/docs/rules for detailed explanations of the selected rules
+select = [
+    "F",       # Pyflakes: avoid common error sources
+    "E",       # pycodestyle errors: check PEP8 style conformity
+    "W",       # pycodestyle warnings: more PEP8 conformity
+    "I",       # isort: adhere to import block order conventions
+    "N",       # pep8-naming: check PEP8 naming conventions
+    "UP",      # pyupgrade: replace outdated syntax and functionality
+    "BLE",     # flake8-blind-except: detect unspecific except-statements
+    "FBT",     # flake8-boolean-trap: force boolean arguments to be specified by keyword
+    "B",       # flake8-bugbear: find likely bugs and design problems
+    "A",       # flake8-builtins: disallow overwriting builtin names
+    "ISC",     # flake8-implicit-str-concat: make concatenated string literals prettier
+    "ICN",     # flake8-import-conventions: use conventional aliases like np or pd
+    "PIE",     # flake8-pie: a few small bug sources and simplifications
+    "T20",     # flake8-print: disallow use of print in production code
+    "PT",      # flake8-pytest-style: best practices for pytest
+    "RSE",     # flake8-raise: style nitpicking for raise statements
+    "RET",     # flake8-return: simplify return statements
+    "SLF",     # flake8-self: disallow accessing non-public members of other classes
+    "SIM115",  # always use a context handler to open files
+    "TID",     # flake8-tidy-imports: require local imports to be absolute
+    "ARG",     # flake8-unused-arguments: detect unused function arguments
+    "PTH",     # flake8-use-pathlib: suggest pathlib functionality to replace os
+    "PGH",     # pygrep-hooks: disallow broad linter ignores
+    "PLC",     # pylint convention: some basic simplifications
+    "PLE",     # pylint error: detect a few possible error sources
+    "PLW0603", # pylint warning: disallow the global statement
+    "NPY",     # numpy specific rules
+    "RUF",     # ruff specific rules: misc best practices
+]
+fix = true
+fixable = ["I"]
+#ignore = ["E501", "E741"]
+target-version = "py311"
+line-length = 88
