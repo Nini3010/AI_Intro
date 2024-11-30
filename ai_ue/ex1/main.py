@@ -1,15 +1,18 @@
 import random as rd
 import time
+from math import sqrt
 
 import numpy as np
 
 # create random state
-start_state = list(range(9))
+puzzle_size = 9
+
+start_state = list(range(puzzle_size))
 rd.shuffle(start_state)
-matrix = np.array(start_state).reshape(-1, 3)
+matrix = np.array(start_state).reshape(-1, int(sqrt(puzzle_size)))
 
 # goal state
-goal_matrix = np.array(list(range(9))).reshape(-1, 3)
+goal_matrix = np.array(list(range(9))).reshape(-1, int(sqrt(puzzle_size)))
 
 
 # check if state is solveable
@@ -59,12 +62,31 @@ def get_manhattan_distance(matrix: np.matrix, goal_matrix: np.matrix) -> int:
 
 # generate successors: generate next possible moves
 def get_next_possible_moves(matrix: np.matrix):
+    next_empty_space_coords = []
     next_moves = []
-    m_row, m_column = np.asarray(np.where(matrix == 0)).flatten()
-    # if row index on top border only add bottom as possible move
-    # if row index on bottom border only add top as possible move
-    # if row index in center add top and bottom as possible move
-    # same with column and left/right
+    empty_row, empty_column = np.asarray(np.where(matrix == 0)).flatten()
+    # if row index not on top border add top as possible move
+    if empty_row > 0:
+        next_empty_space_coords.append((empty_row - 1, empty_column))
+    # if row index not on bottom border add bottom as possible move
+    if empty_row < matrix.shape[0] - 1:
+        next_empty_space_coords.append((empty_row + 1, empty_column))
+    # if column index not on left border add left as possible move
+    if empty_column > 0:
+        next_empty_space_coords.append((empty_row, empty_column - 1))
+    # if column index not on right border add right as possible move
+    if empty_column < matrix.shape[1] - 1:
+        next_empty_space_coords.append((empty_row, empty_column + 1))
+
+    # create copy of current stage matrix and generate successor by making possible move in copy
+    for row, column in next_empty_space_coords:
+        next_matrix = matrix.copy()
+        next_matrix[empty_row][empty_column], next_matrix[row][column] = (
+            next_matrix[row][column],
+            next_matrix[empty_row][empty_column],
+        )
+        next_moves.append(next_matrix)
+    return next_moves
 
 
 # compare heuristics
@@ -76,3 +98,4 @@ print(f"solveable?: {puzzle_solvable(matrix)}")
 if solveable:
     print(f"hamming distance: {get_hamming_distance(matrix,goal_matrix)}")
     print(f"manhattan distance: {get_manhattan_distance(matrix,goal_matrix)}")
+    print(f"successors stage 1: {get_next_possible_moves(matrix)}")
