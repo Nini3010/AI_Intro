@@ -1,11 +1,13 @@
 import heapq
 import random as rd
+import statistics
 import time
-from math import sqrt
 
 import numpy as np
 
+# import math
 # import resource
+GOAL_MATRIX: np.matrix
 
 
 class Node:
@@ -23,16 +25,25 @@ class Node:
         return (self.board.tobytes(), self.step) == (other.board.tobytes(), self.step)
 
 
-def initial_state(puzzle_size_edge=3) -> tuple[np.matrix, np.matrix]:
-    # create random state
+def generate_start_matrix(puzzle_size_edge: int = 3) -> np.matrix:
     start_state = list(range(puzzle_size_edge * puzzle_size_edge))
     rd.shuffle(start_state)
-    initial_matrix = np.array(start_state).reshape(-1, int(puzzle_size_edge))
-    # goal state
-    goal_matrix = np.array(list(range(puzzle_size_edge * puzzle_size_edge))).reshape(
+    return np.array(start_state).reshape(-1, int(puzzle_size_edge))
+
+
+def generate_goal_matrix(puzzle_size_edge: int = 3) -> None:
+    global GOAL_MATRIX  # noqa: PLW0603
+    GOAL_MATRIX = np.array(list(range(puzzle_size_edge * puzzle_size_edge))).reshape(
         -1, int(puzzle_size_edge)
     )
-    return (initial_matrix, goal_matrix)
+
+
+def initial_state(puzzle_size_edge: int = 3) -> np.matrix:
+    # create random state
+    start_matrix = generate_start_matrix(puzzle_size_edge)
+    # goal state
+    generate_goal_matrix()
+    return start_matrix
 
 
 # inversion counter
@@ -51,29 +62,28 @@ def puzzle_solvable(matrix: np.matrix) -> bool:
     if matrix.shape[0] % 2 == 0:
         # for Even board size solvability: (inverions + row of empty element) needs to be odd to be solveable
         return (inversions + np.asarray(np.where(matrix == 0)).flatten()[0] % 2 != 0,)
-    else:
-        # Even board size: odd number of inversions
-        return inversions % 2 == 0
+    # Even board size: odd number of inversions
+    return inversions % 2 == 0
 
 
 # Hamming distance heuristic
 # can change every tile with every other tile
 # compare each number in matrix with goal matrix and if they differ add one to the hamming distance
 # we have to exclude the blank space to get the correct distance
-def hamming(matrix: np.matrix, goal_matrix: np.matrix) -> int:
+def hamming(matrix: np.matrix) -> int:
     return sum(
         num != goal_num and num != 0
-        for num, goal_num in zip(matrix.flatten(), goal_matrix.flatten(), strict=True)
+        for num, goal_num in zip(matrix.flatten(), GOAL_MATRIX.flatten(), strict=True)
     )
 
 
 # heuristic 2: Manhattan distance
 # can change every tile with every neighbouring tile
-def manhattan(matrix: np.matrix, goal_matrix: np.matrix) -> int:
+def manhattan(matrix: np.matrix) -> int:
     distance = 0
     for row in matrix:
         for num in row:
-            goal_row, goal_column = np.asarray(np.where(goal_matrix == num)).flatten()
+            goal_row, goal_column = np.asarray(np.where(GOAL_MATRIX == num)).flatten()
             m_row, m_column = np.asarray(np.where(matrix == num)).flatten()
             distance += abs(m_row - goal_row) + abs(m_column - goal_column)
     return distance
@@ -127,9 +137,7 @@ def get_child_nodes(parent: Node, heuristic: callable) -> list[Node]:
     return child_nodes
 
 
-def solve_puzzle(
-    initial_matrix: np.matrix, goal_matrix: np.matrix, heuristic: callable
-) -> list[Node]:
+def solve_puzzle(initial_matrix: np.matrix, heuristic: callable) -> list[Node]:
     fastest_path: list[Node] = []
     open_and_visited_moves_bytes = []
     queue: list[(int, Node)] = []
@@ -148,7 +156,7 @@ def solve_puzzle(
 
         # visited_moves.append((priority, cost, step, move))
         open_and_visited_moves_bytes.append(node.board.tobytes())
-        if np.array_equal(node.board, goal_matrix):
+        if np.array_equal(node.board, GOAL_MATRIX):
             t_node = node
             while t_node.parent is not None:
                 fastest_path.append(t_node)
@@ -168,48 +176,92 @@ def solve_puzzle(
 
 def main():
     puzzle_size_edge = 3
-    start_matrix, goal_matrix = initial_state(puzzle_size_edge)
-    print(f"start state: \n{start_matrix}")
-    solveable = puzzle_solvable(start_matrix)
-    print(f"inversion count: {get_inv_count(start_matrix.flatten())}")
-    if not solveable and (puzzle_size_edge * puzzle_size_edge) % 2 != 0:
-        print(
-            """
-            This matrix is NOT solveable
-            Reason:
-            If the board size N is an odd integer, then each legal move changes the number of inversions by an even number. 
-            Thus, if a board has an odd number of inversions, then it cannot lead to the goal board by a sequence of legal moves,
-            because the goal board has an even number of inversions (zero)."""
-        )
-    elif not solveable:
-        print(
-            """
-            This matrix is NOT solveable
-            Reason:
-            The parity of the number of inversions plus the row of the blank square stays the same: each legal move changes this sum by an even number. 
-            If this sum is even, then it cannot lead to the goal board by a sequence of legal moves; 
-            if this sum is odd, then it can lead to the goal board by a sequence of legal moves, because goal board has an odd number of inversions (three). """
-        )
-    else:
-        print("This matrix is solveable")
-        print("heuristic?: \n1: Hamming\n2: Manhattan\n9: Benchmark\n(input number)")
-        match int(input()):
-            case 1:
-                heuristics = [hamming]
-            case 2:
-                heuristics = [manhattan]
-            case 9:
-                heuristics = [hamming, manhattan]
-            case _:
-                raise ValueError("Invalid heuristic choice!")
+    measure = False
+    print(
+        """
+    Select the heuristic to be used (input number):
+    1: Hamming
+    2: Manhattan
+    9: Compare all
+    """
+    )
+    match int(input()):
+        case 1:
+            heuristics = hamming
+        case 2:
+            heuristics = manhattan
+        case 9:
+            heuristics = [hamming, manhattan]
+            measure = True
+        case _:
+            raise ValueError("Invalid heuristic choice!")
+    if measure:
+        print("Number of random boards? (default 100): ")
+        board_amount = 100
+        try:
+            board_amount = int(input() or 0)
+        except ValueError:
+            pass
+        generate_goal_matrix(puzzle_size_edge)
+        start_matrices = []
+        while len(start_matrices) < board_amount:
+            m = generate_start_matrix(puzzle_size_edge)
+            if puzzle_solvable(m):
+                start_matrices.append(m)
+
+        heuristic_names = []
+        runtimes = [[] for _ in range(len(heuristics))]
         for heuristic in heuristics:
-            solve_path = solve_puzzle(start_matrix, goal_matrix, heuristic)
+            heuristic_names.append(heuristic.__name__)
+            for m in start_matrices:
+                start_time = time.time()
+                solve_puzzle(m, heuristic)
+                runtimes[len(heuristic_names) - 1].append(time.time() - start_time)
+        print(
+            f"""
+{40*"-"}
+Statistics          {heuristic_names[0]}        {heuristic_names[1]}
+{40*"-"}
+Runtime(sec)    mean: {statistics.mean(runtimes[0])}        {statistics.mean(runtimes[1])}
+            """
+        )
+
+    else:
+        start_matrix = initial_state(puzzle_size_edge)
+        print(f"start state: \n{start_matrix}")
+        solveable = puzzle_solvable(start_matrix)
+        print(f"inversion count: {get_inv_count(start_matrix.flatten())}")
+        if not solveable and (puzzle_size_edge * puzzle_size_edge) % 2 != 0:
+            print(
+                """
+        This matrix is NOT solveable
+        Reason:
+        If the board size N is an odd integer, then each legal move changes the number of inversions by an even number.
+        Thus, if a board has an odd number of inversions, then it cannot lead to the goal board by a sequence of legal moves,
+        because the goal board has an even number of inversions (zero).
+        """
+            )
+        elif not solveable:
+            print(
+                """
+        This matrix is NOT solveable
+        Reason:
+        The parity of the number of inversions plus the row of the blank square stays the same: each legal move changes this sum by an even number.
+        If this sum is even, then it cannot lead to the goal board by a sequence of legal moves;
+        if this sum is odd, then it can lead to the goal board by a sequence of legal moves, because goal board has an odd number of inversions (three).
+        """
+            )
+        else:
+            print("This matrix is solveable")
+            solve_path = solve_puzzle(start_matrix, heuristics)
+
             print(f"solved in {len(solve_path)} steps")
-            if len(heuristics) == 1:
-                for node in solve_path:
-                    print(f"step: {node.step}\n{node.board}\n")
+
+            for node in solve_path:
+                print(f"step: {node.step}\n{node.board}\n")
 
 
+main()
 # ram usage
 # mem_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 # mem_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
