@@ -99,11 +99,19 @@ def calc_costs(next_moves: list[np.matrix], heuristic: callable) -> int:
     return h_costs
 
 
-# compare heuristics
+def solve_puzzle(initial_state: np.matrix):
+    open_moves = []
+    visited_moves = []
+    open_moves.append(initial_state)
+    # while len(open_moves) > 0:
 
-print(f"start state: \n{matrix}")
-solveable = puzzle_solvable(matrix)
-print(f"solveable?: {puzzle_solvable(matrix)}")
+
+# compare heuristics
+solveable = False
+while not solveable:
+    print(f"start state: \n{matrix}")
+    solveable = puzzle_solvable(matrix)
+    print(f"solveable?: {puzzle_solvable(matrix)}")
 if solveable:
     print(f"heuristic?: \n1: Hamming\n2: Manhattan\n9: Benchmark\n(input number)")
     heuristic_num = int(input())
@@ -113,24 +121,33 @@ if solveable:
         heuristic = get_manhattan_distance
     if heuristic is not None:
         unsolved = True
-        queue: heapq = []
-        current_step = 1
-        while unsolved:
-            moves = get_next_possible_moves(matrix)
-            costs = calc_costs(moves, heuristic)
-            priorities = [x + current_step for x in costs]
-            # moves = [move for _, move in sorted(zip(priorities, moves, strict=True))]
-            # costs = [cost for _, cost in sorted(zip(priorities, costs, strict=True))]
-            # priorities = sorted(priorities)
+        visited_moves = []
+        queue = []
 
-            queue = heapq.heapify(
-                [
-                    (prio, cost, move)
-                    for prio, cost, move in zip(priorities, costs, moves, strict=True)
-                ]
-            )
-            print(f"heap: {queue}")
-            unsolved = False
+        move = matrix
+        step = 0
+        cost = calc_costs([matrix], heuristic)[0]
+        priority = cost
+        visited_moves.append((priority, cost, step, matrix))
+        heapq.heappush(queue, (priority, cost, step, 0, move))
+
+        while len(queue) > 0:
+            priority, cost, step, _, move = heapq.heappop(queue)
+            visited_moves.append((priority, cost, step, matrix))
+            if np.array_equal(move, GOAL_MATRIX):
+                break
+
+            moves = get_next_possible_moves(move)
+            step += 1
+            costs = calc_costs(moves, heuristic)
+            priorities = [x + step for x in costs]
+
+            for priority, cost, move in zip(priorities, costs, moves, strict=True):
+                salt = rd.randbytes(2)
+                heapq.heappush(queue, (priority, cost, step, salt, move))
+
+            # prio, step, _, cost, move = heapq.heappop(queue)
+            # visited_moves.append((prio, step, cost, move))
             # for prio,move in zip(priorities,moves):
 
             # print(f"hamming distance: {get_hamming_distance(matrix,GOAL_MATRIX)}")
