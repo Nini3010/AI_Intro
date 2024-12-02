@@ -16,7 +16,7 @@ Our Software Architecture includes only one class called Node. It contains vario
 
 ### Node Class:
 
-Defines puzzle board, cost, steps, and priority for ordering.
+Represents a single state of the sliding puzzle. It encapsulates the puzzle configuration (board), metadata like cost, step count, and parent node, and provides functionality for comparing and equating states for use in priority queues and search algorithms.
 
 ### Functions:
 
@@ -62,16 +62,22 @@ Provides supportive functionalities for core operations:
 
 ## 4. Design Decisions
 
-- Matrix representation for puzzle board state: Easily
-- Class Representation for Node:
-  Is used for keeping track of the path taken to the goal.
-  We preferred this over a list.
-- Global Variables for Goal State: Easily accessible and unchangig goal matrix and cached goal states
-- Split between single puzzle and measurement of all heuristics for multiple puzzles:
+- Python:\
+  Python was chosen for its simplicity and readability. NumPy supports efficient matrix and array operations, which were essential for this program.
+
+- Matrix Representation for Puzzle Board State: \
+  The sliding puzzle board is represented as a matrix to naturally align with its 2D structure. This choice enables intuitive operations like tile swapping and position calculations. NumPy enhances performance and provides a variety of built-in functions for matrix manipulation.
+
+- Class Representation for Node: \
+  The Node class allows efficient tracking of the solution path to the goal. The class-based approach is preferred over a list for better organization, extensibility, and clarity.
+
+- Global Variables for Goal State \
+  Using global variables for the goal matrix and cached goal states ensures they remain consistent and accessible throughout the program. This eliminates the need to pass these variables through the whole program and therefore simplifying code.
+
+- Split Between Single Puzzle and Measurement of All Heuristics \
+  The workflows for solving a single puzzle and evaluating heuristics over multiple puzzles differ significantly. Separating them simplifies the code and ensures each functionality is optimized for its purpose. Single puzzle solving focuses on finding a solution, while heuristic measurement emphasizes comparative performance metrics.
 
 ## 5. Discussions
 
-- Scalability: The current design scales with puzzle size, but performance may degrade for larger matrices due to computational and memory overhead.
-- Heuristic Trade-offs: While Manhattan generally performs better than Hamming for sliding puzzles, choosing heuristics based on problem constraints could improve efficiency.
-- Modularity: Functions and classes are designed modularly, making future enhancements (e.g., additional heuristics) straightforward.
-- Performance Optimization: Storing visited states and open nodes in bytes minimizes memory usage.
+- Admissible Heuristic:
+- How to see which heuristic is better: Highest cost while still admissible
