@@ -8,7 +8,7 @@ The file implements a sliding puzzle game solver, which can compute solutions us
 
 ## 2. Software Architecture Diagram
 
-The architecture primarily revolves around a class Node to represent states in the search tree and multiple utility functions to generate states, calculate costs, and evaluate solvability.
+Our Software Architecture includes only one class called Node. It contains various attributes to be used. Further helper functions are implemented. We split these helper functions into boxes for easier organization and understanding, these do not represent another class. Each box groups functions based on their specific roles in the program.
 
 ![uml_diagram](_documentation_files/uml.png "A* UML")
 
@@ -20,26 +20,45 @@ Defines puzzle board, cost, steps, and priority for ordering.
 
 ### Functions:
 
-#### Heuristic Functions (hamming, manhattan):
+#### Heuristic Functions (`hamming`, `manhattan`):
 
-Calculates the cost to goal state using either hamming or manhattan distance.
+Provides evaluation metrics for guiding the search algorithm:
 
-#### PuzzleGenerators (generate_start_state, generate_goal_state,initial_state):
+- `hamming`: Counts the number of misplaced tiles compared to the goal state.
+- `manhattan`: Calculates the sum of distances for each tile from its goal position, offering a more accurate cost for puzzle navigation.
 
-Produces start and goal matrices for puzzles.
+#### PuzzleGenerators (`generate_start_state`, `generate_goal_state`, `initial_state`):
 
-#### Validators (puzzle_solvable, get_inv_count):
+Handles the creation of puzzle states:
 
-Checks if puzzles are solvable based on inversion count and empty tile row.
+- `generate_start_state`: Produces a randomized, shuffled puzzle matrix.
+- `generate_goal_state`: Creates the goal configuration where tiles are ordered sequentially.
+- `initial_state`: Combines start and goal state generation to initialize the puzzle setup.
 
-#### Solvers (solve_puzzle, solve_single_puzzle, compare_heuristics, main):
+#### Validators (`puzzle_solvable`, `get_inv_count`):
 
-Implements A\* algorithm, considering heuristics to traverse nodes.
-Holds main flow of program.
+Checks the validity of puzzle configurations:
 
-#### Utility Functions (swap, calc_cost, get_next_moves, create_node):
+- `get_inv_count`: Calculates the number of inversions in a puzzle, a key metric for determining solvability.
+- `puzzle_solvable`: Evaluates whether the puzzle configuration can lead to the goal state based on its inversion count and the position of the blank tile.
 
-Aid operations like tile swapping, cost calculation, and generating successors.
+#### Solvers (`solve_puzzle`, `solve_single_puzzle`, `compare_heuristics`, `main`):
+
+Implements the main logic for solving puzzles:
+
+- `solve_puzzle`: Uses the A\* algorithm to compute the solution path, guided by a specified heuristic.
+- `solve_single_puzzle`: Solves a single instance of a puzzle, displaying the steps or explaining unsolvability.
+- `compare_heuristics`: Benchmarks and compares the performance of multiple heuristics over a set of random puzzles.
+- `main`: Acts as the program's entry point, allowing the user to select a heuristic or perform heuristic comparisons.
+
+#### Utility Functions (`swap`, `calc_cost`, `get_next_moves`, `create_node`):
+
+Provides supportive functionalities for core operations:
+
+`swap`: Swaps two tiles in a matrix to create a new configuration.
+`calc_cost`: Computes the heuristic cost for a given puzzle state.
+`get_next_moves`: Generates all possible successor states from the current configuration.
+`create_node`: Creates a new node for a specific successor state, associating it with the parent node and heuristic cost.
 
 ## 4. Design Decisions
 
