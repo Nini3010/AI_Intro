@@ -1,16 +1,21 @@
 import heapq
+import os
 import random as rd
 import statistics
 import time
+import tracemalloc
 
 import numpy as np
 
 # import math
 # import resource
 GOAL_MATRIX: np.matrix
+MEASURE: int = False
 
 
 class Node:
+    """_summary_"""
+
     def __init__(self, parent, board, cost, step):
         self.parent = parent
         self.board = board
@@ -19,19 +24,50 @@ class Node:
         self.priority = cost + step
 
     def __lt__(self, other):
-        return (self.board.tobytes(), self.step) < (other.board.tobytes(), other.step)
+        """_summary_
+
+        Args:
+            other (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if self.cost == other.cost:
+            return self.board.tobytes() < other.board.tobytes()
+        return self.cost < other.cost
 
     def __eq__(self, other):
+        """_summary_
+
+        Args:
+            other (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return (self.board.tobytes(), self.step) == (other.board.tobytes(), self.step)
 
 
 def generate_start_matrix(puzzle_size_edge: int = 3) -> np.matrix:
+    """_summary_
+
+    Args:
+        puzzle_size_edge (int, optional): _description_. Defaults to 3.
+
+    Returns:
+        np.matrix: _description_
+    """
     start_state = list(range(puzzle_size_edge * puzzle_size_edge))
     rd.shuffle(start_state)
     return np.array(start_state).reshape(-1, int(puzzle_size_edge))
 
 
 def generate_goal_matrix(puzzle_size_edge: int = 3) -> None:
+    """_summary_
+
+    Args:
+        puzzle_size_edge (int, optional): _description_. Defaults to 3.
+    """
     global GOAL_MATRIX  # noqa: PLW0603
     GOAL_MATRIX = np.array(list(range(puzzle_size_edge * puzzle_size_edge))).reshape(
         -1, int(puzzle_size_edge)
@@ -39,6 +75,14 @@ def generate_goal_matrix(puzzle_size_edge: int = 3) -> None:
 
 
 def initial_state(puzzle_size_edge: int = 3) -> np.matrix:
+    """_summary_
+
+    Args:
+        puzzle_size_edge (int, optional): _description_. Defaults to 3.
+
+    Returns:
+        np.matrix: _description_
+    """
     # create random state
     start_matrix = generate_start_matrix(puzzle_size_edge)
     # goal state
@@ -48,6 +92,14 @@ def initial_state(puzzle_size_edge: int = 3) -> np.matrix:
 
 # inversion counter
 def get_inv_count(arr: np.ndarray) -> int:
+    """_summary_
+
+    Args:
+        arr (np.ndarray): _description_
+
+    Returns:
+        int: _description_
+    """
     inv_count = 0
     for i in range(arr.size):
         for j in range(i + 1, arr.size):
@@ -58,6 +110,14 @@ def get_inv_count(arr: np.ndarray) -> int:
 
 # check if puzzle is solveable via [sum of inversions] mod 2 = 0
 def puzzle_solvable(matrix: np.matrix) -> bool:
+    """_summary_
+
+    Args:
+        matrix (np.matrix): _description_
+
+    Returns:
+        bool: _description_
+    """
     inversions = get_inv_count(matrix.flatten())
     if matrix.shape[0] % 2 == 0:
         # for Even board size solvability: (inverions + row of empty element) needs to be odd to be solveable
@@ -71,6 +131,14 @@ def puzzle_solvable(matrix: np.matrix) -> bool:
 # compare each number in matrix with goal matrix and if they differ add one to the hamming distance
 # we have to exclude the blank space to get the correct distance
 def hamming(matrix: np.matrix) -> int:
+    """_summary_
+
+    Args:
+        matrix (np.matrix): _description_
+
+    Returns:
+        int: _description_
+    """
     return sum(
         num != goal_num and num != 0
         for num, goal_num in zip(matrix.flatten(), GOAL_MATRIX.flatten(), strict=True)
@@ -80,6 +148,14 @@ def hamming(matrix: np.matrix) -> int:
 # heuristic 2: Manhattan distance
 # can change every tile with every neighbouring tile
 def manhattan(matrix: np.matrix) -> int:
+    """_summary_
+
+    Args:
+        matrix (np.matrix): _description_
+
+    Returns:
+        int: _description_
+    """
     distance = 0
     for row in matrix:
         for num in row:
@@ -90,6 +166,18 @@ def manhattan(matrix: np.matrix) -> int:
 
 
 def swap(matrix: np.matrix, row1: int, col1: int, row2: int, col2: int) -> np.matrix:
+    """_summary_
+
+    Args:
+        matrix (np.matrix): _description_
+        row1 (int): _description_
+        col1 (int): _description_
+        row2 (int): _description_
+        col2 (int): _description_
+
+    Returns:
+        np.matrix: _description_
+    """
     new_matrix = matrix.copy()
     new_matrix[row1][col1], new_matrix[row2][col2] = (
         new_matrix[row2][col2],
@@ -100,11 +188,29 @@ def swap(matrix: np.matrix, row1: int, col1: int, row2: int, col2: int) -> np.ma
 
 # missing: costs + current step
 def calc_cost(next_move: np.matrix, heuristic: callable) -> int:
+    """_summary_
+
+    Args:
+        next_move (np.matrix): _description_
+        heuristic (callable): _description_
+
+    Returns:
+        int: _description_
+    """
     return heuristic(next_move)
 
 
 # generate successors: generate next possible moves
 def get_child_nodes(parent: Node, heuristic: callable) -> list[Node]:
+    """_summary_
+
+    Args:
+        parent (Node): _description_
+        heuristic (callable): _description_
+
+    Returns:
+        list[Node]: _description_
+    """
     parent_matrix = parent.board
     next_moves = []
     empty_row, empty_column = np.asarray(np.where(parent_matrix == 0)).flatten()
@@ -137,26 +243,37 @@ def get_child_nodes(parent: Node, heuristic: callable) -> list[Node]:
     return child_nodes
 
 
-def solve_puzzle(initial_matrix: np.matrix, heuristic: callable) -> list[Node]:
+def solve_puzzle(
+    initial_matrix: np.matrix, heuristic: callable
+) -> list[Node] | tuple[int, int, int]:
+    """_summary_
+
+    Args:
+        initial_matrix (np.matrix): _description_
+        heuristic (callable): _description_
+
+    Returns:
+        list[Node] | tuple[int, int, int]: _description_
+    """
     fastest_path: list[Node] = []
     open_and_visited_moves_bytes = []
     queue: list[(int, Node)] = []
+    overall_steps = 0
+    expanded_nodes = 0
+    queued_nodes = 0
 
-    move = initial_matrix
-    step = 0
-    cost = calc_cost(move, heuristic)
-    priority = cost
-    node = Node(None, move, cost, step)
-    heapq.heappush(queue, (priority, node))
+    cost = calc_cost(initial_matrix, heuristic)
+    node = Node(None, initial_matrix, cost, 0)
+    heapq.heappush(queue, (cost, node))
 
     while queue:
-        heap_op = heapq.heappop(queue)
-        priority: int = heap_op[0]
-        node: Node = heap_op[1]
+        node: Node
+        _, node = heapq.heappop(queue)
 
-        # visited_moves.append((priority, cost, step, move))
         open_and_visited_moves_bytes.append(node.board.tobytes())
         if np.array_equal(node.board, GOAL_MATRIX):
+            if MEASURE:
+                return (overall_steps, expanded_nodes, queued_nodes)
             t_node = node
             while t_node.parent is not None:
                 fastest_path.append(t_node)
@@ -165,18 +282,26 @@ def solve_puzzle(initial_matrix: np.matrix, heuristic: callable) -> list[Node]:
             return fastest_path
 
         child_nodes = get_child_nodes(node, heuristic)
+        expanded_nodes += len(child_nodes)
 
         for node in child_nodes:
             b_move = node.board.tobytes()
             if b_move not in open_and_visited_moves_bytes:
                 open_and_visited_moves_bytes.append(b_move)
                 heapq.heappush(queue, (node.priority, node))
+                queued_nodes += 1
+        overall_steps += 1
+    if MEASURE:
+        return (overall_steps, expanded_nodes, queued_nodes)
     return fastest_path
 
 
 def main():
+    """
+    hamdle cores logicus
+    + much more and so on
+    """
     puzzle_size_edge = 3
-    measure = False
     print(
         """
     Select the heuristic to be used (input number):
@@ -192,10 +317,11 @@ def main():
             heuristics = manhattan
         case 9:
             heuristics = [hamming, manhattan]
-            measure = True
+            global MEASURE
+            MEASURE = True
         case _:
             raise ValueError("Invalid heuristic choice!")
-    if measure:
+    if MEASURE:
         print("Number of random boards? (default 100): ")
         board_amount = 100
         try:
@@ -211,18 +337,37 @@ def main():
 
         heuristic_names = []
         runtimes = [[] for _ in range(len(heuristics))]
+        steps = [[] for _ in range(len(heuristics))]
+        expanded_nodes = [[] for _ in range(len(heuristics))]
+        queued_nodes = [[] for _ in range(len(heuristics))]
+        mb_used = [[] for _ in range(len(heuristics))]
         for heuristic in heuristics:
             heuristic_names.append(heuristic.__name__)
             for m in start_matrices:
+                tracemalloc.start()
                 start_time = time.time()
-                solve_puzzle(m, heuristic)
+                measurements = solve_puzzle(m, heuristic)
                 runtimes[len(heuristic_names) - 1].append(time.time() - start_time)
+                mb_used[len(heuristic_names) - 1].append(
+                    tracemalloc.get_traced_memory()[1]
+                )
+                tracemalloc.stop()
+                steps[len(heuristic_names) - 1].append(measurements[0])
+                expanded_nodes[len(heuristic_names) - 1].append(measurements[1])
+                queued_nodes[len(heuristic_names) - 1].append(measurements[2])
         print(
             f"""
 {40*"-"}
-Statistics          {heuristic_names[0]}        {heuristic_names[1]}
+Statistics                             {heuristic_names[0]}\t\t{heuristic_names[1]}
 {40*"-"}
-Runtime(sec)    mean: {statistics.mean(runtimes[0])}        {statistics.mean(runtimes[1])}
+Runtime (secs)                  mean: {statistics.mean(runtimes[0]):.2f} sec\t\t{statistics.mean(runtimes[1]):.2f}
+                  standard deviation: {statistics.stdev(runtimes[0]):.2f}\t\t{statistics.stdev(runtimes[0]):.2f}
+MB used                         mean: {statistics.mean(mb_used[0]) / (1024**2):.2f} MB\t\t{statistics.mean(mb_used[1]) / (1024**2):.2f} MB
+                  standard deviation: {statistics.stdev(mb_used[0]):.2f} MB\t\t{statistics.stdev(mb_used[0]):.2f} MB
+Algorithm complexity (steps)    mean: {statistics.mean(steps[0]):.0f}\t\t{statistics.mean(steps[1]):.0f}
+Memory Effort:
+Expanded Nodes                  mean: {statistics.mean(expanded_nodes[0]):.0f}\t\t{statistics.mean(expanded_nodes[1]):.0f}
+Queued Nodes                    mean: {statistics.mean(queued_nodes[0]):.0f}\t\t{statistics.mean(queued_nodes[1]):.0f}
             """
         )
 
