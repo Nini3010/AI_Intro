@@ -8,27 +8,47 @@ The file implements a sliding puzzle game solver, which can compute solutions us
 
 ## 2. Software Architecture Diagram
 
-The architecture primarily revolves around a class Node to represent states in the search tree and multiple utility functions to generate states, calculate costs, and evaluate solvability. Here's a logical flow:
+The architecture primarily revolves around a class Node to represent states in the search tree and multiple utility functions to generate states, calculate costs, and evaluate solvability.
 
-Node Class - Represents puzzle states.
-Heuristics Functions - Hamming and Manhattan distances for evaluation.
-Puzzle Generation - Creates start and goal states.
-Solver - Employs A\* algorithm to find solutions.
-(For actual visual representation, let me know to create one!)
+![uml_diagram](_documentation_files/uml.png "A* UML")
 
 ## 3. Module Descriptions
 
-Node Class: Defines puzzle state, cost, steps, and ordering logic.
-Heuristic Functions (hamming, manhattan): Calculates the cost to goal state using different approaches.
-Puzzle State Generators (generate_start_state, generate_goal_state): Produces start and goal matrices for puzzles.
-Validation (puzzle_solvable, get_inv_count): Checks if puzzles are solvable based on inversion count and empty tile row.
-Solver (solve_puzzle): Implements A\* algorithm, considering heuristics to traverse nodes.
-Utility Functions (swap, calc_cost, get_next_moves): Aid operations like tile swapping, cost calculation, and generating successors.
+### Node Class:
+
+Defines puzzle board, cost, steps, and priority for ordering.
+
+### Functions:
+
+#### Heuristic Functions (hamming, manhattan):
+
+Calculates the cost to goal state using either hamming or manhattan distance.
+
+#### PuzzleGenerators (generate_start_state, generate_goal_state,initial_state):
+
+Produces start and goal matrices for puzzles.
+
+#### Validators (puzzle_solvable, get_inv_count):
+
+Checks if puzzles are solvable based on inversion count and empty tile row.
+
+#### Solvers (solve_puzzle, solve_single_puzzle, compare_heuristics, main):
+
+Implements A\* algorithm, considering heuristics to traverse nodes.
+Holds main flow of program.
+
+#### Utility Functions (swap, calc_cost, get_next_moves, create_node):
+
+Aid operations like tile swapping, cost calculation, and generating successors.
 
 ## 4. Design Decisions
 
-Class Representation for State: Encapsulates puzzle state and associated metadata, ensuring modularity and clarity.
-Global Variables for Goal State: Simplifies goal position references, enhancing lookup speed for Manhattan calculations.
+- Matrix representation for puzzle board state: Easily
+- Class Representation for Node:
+  Is used for keeping track of the path taken to the goal.
+  We preferred this over a list.
+- Global Variables for Goal State: Easily accessible and unchangig goal matrix and cached goal states
+- Split between single puzzle and measurement of all heuristics for multiple puzzles:
 
 ## 5. Discussions
 

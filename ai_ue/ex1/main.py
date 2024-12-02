@@ -3,12 +3,14 @@ import random as rd
 import statistics
 import time
 import tracemalloc
+from types import FunctionType
 
 import numpy as np
 
 GOAL_MATRIX: np.matrix
 GOAL_POSITIONS: dict[int, tuple[int, int]] = {}
 MEASURE: int = False
+ONLY_SOLVABLE: bool = True
 
 
 class Node:
@@ -75,6 +77,12 @@ def generate_start_state(puzzle_size_edge: int = 3) -> np.matrix:
     """
     start_state = list(range(puzzle_size_edge * puzzle_size_edge))
     rd.shuffle(start_state)
+    if ONLY_SOLVABLE:
+        while not puzzle_solvable(
+            np.array(start_state).reshape(-1, int(puzzle_size_edge))
+        ):
+            rd.shuffle(start_state)
+
     return np.array(start_state).reshape(-1, int(puzzle_size_edge))
 
 
@@ -219,13 +227,13 @@ def swap(matrix: np.matrix, row1: int, col1: int, row2: int, col2: int) -> np.ma
     return new_matrix
 
 
-def calc_cost(next_move: np.matrix, heuristic: callable) -> int:
+def calc_cost(next_move: np.matrix, heuristic: FunctionType) -> int:
     """
     Calculate the cost of a move using the specified heuristic.
 
     Args:
         next_move (np.matrix): The new puzzle matrix after a move.
-        heuristic (callable): The heuristic function to calculate cost.
+        heuristic (FunctionType): The heuristic function to calculate cost.
 
     Returns:
         int: The heuristic cost of the move.
@@ -269,14 +277,14 @@ def get_next_moves(parent: Node) -> list[np.matrix]:
     return next_moves
 
 
-def create_node(parent: Node, move: np.matrix, heuristic: callable) -> Node:
+def create_node(parent: Node, move: np.matrix, heuristic: FunctionType) -> Node:
     """
     Create a new node for a given move.
 
     Args:
         parent (Node): The parent node.
         move (np.matrix): The puzzle matrix for the new move.
-        heuristic (callable): The heuristic function to calculate cost.
+        heuristic (FunctionType): The heuristic function to calculate cost.
 
     Returns:
         Node: The newly created node.
@@ -286,21 +294,21 @@ def create_node(parent: Node, move: np.matrix, heuristic: callable) -> Node:
 
 
 def solve_puzzle(
-    initial_matrix: np.matrix, heuristic: callable
+    initial_matrix: np.matrix, heuristic: FunctionType
 ) -> list[Node] | tuple[int, int, int]:
     """
     Solve the puzzle using the specified heuristic.
 
     Args:
         initial_matrix (np.matrix): The starting puzzle matrix.
-        heuristic (callable): The heuristic function to guide the search.
+        heuristic (FunctionType): The heuristic function to guide the search.
 
     Returns:
         list[Node] | tuple[int, int, int]: The solution path or performance metrics.
     """
     fastest_path: list[Node] = []
     open_and_visited_moves_bytes = []
-    queue: list[(int, Node)] = []
+    queue: list[tuple[int, Node]] = []
     overall_steps = 0
     expanded_nodes = 0
     queued_nodes = 0
@@ -340,7 +348,7 @@ def solve_puzzle(
     return fastest_path
 
 
-def solve_single_puzzle(heuristics: callable, puzzle_size_edge: int) -> None:
+def solve_single_puzzle(heuristics: FunctionType, puzzle_size_edge: int) -> None:
     """
     Solve a single instance of the sliding puzzle using the chosen heuristic.
 
@@ -349,7 +357,7 @@ def solve_single_puzzle(heuristics: callable, puzzle_size_edge: int) -> None:
     If the puzzle is unsolvable, an explanation is provided.
 
     Args:
-        heuristics (callable): The heuristic function to guide the solution process.
+        heuristics (FunctionType): The heuristic function to guide the solution process.
         puzzle_size_edge (int): The edge length of the puzzle.
 
     Output:
@@ -359,44 +367,46 @@ def solve_single_puzzle(heuristics: callable, puzzle_size_edge: int) -> None:
     """
     start_matrix = initial_state(puzzle_size_edge)
     print(f"start state: \n{start_matrix}")
-    solveable = puzzle_solvable(start_matrix)
     print(f"inversion count: {get_inv_count(start_matrix.flatten())}")
-    if not solveable and (puzzle_size_edge * puzzle_size_edge) % 2 != 0:
-        print(
-            """
-    This matrix is NOT solveable
-    Reason:
-    If the board size N is an odd integer, then each legal move changes the number of inversions by an even number.
-    Thus, if a board has an odd number of inversions, then it cannot lead to the goal board by a sequence of legal moves,
-    because the goal board has an even number of inversions (zero).
-    """
-        )
-    elif not solveable:
-        print(
-            """
-    This matrix is NOT solveable
-    Reason:
-    The parity of the number of inversions plus the row of the blank square stays the same: each legal move changes this sum by an even number.
-    If this sum is even, then it cannot lead to the goal board by a sequence of legal moves;
-    if this sum is odd, then it can lead to the goal board by a sequence of legal moves, because goal board has an odd number of inversions (three).
-    """
-        )
-    else:
+    if not ONLY_SOLVABLE:
+        solveable = puzzle_solvable(start_matrix)
+        if not solveable and (puzzle_size_edge * puzzle_size_edge) % 2 != 0:
+            print(
+                """
+        This matrix is NOT solveable
+        Reason:
+        If the board size N is an odd integer, then each legal move changes the number of inversions by an even number.
+        Thus, if a board has an odd number of inversions, then it cannot lead to the goal board by a sequence of legal moves,
+        because the goal board has an even number of inversions (zero).
+        """
+            )
+            return
+        elif not solveable:
+            print(
+                """
+        This matrix is NOT solveable
+        Reason:
+        The parity of the number of inversions plus the row of the blank square stays the same: each legal move changes this sum by an even number.
+        If this sum is even, then it cannot lead to the goal board by a sequence of legal moves;
+        if this sum is odd, then it can lead to the goal board by a sequence of legal moves, because goal board has an odd number of inversions (three).
+        """
+            )
+            return
         print("This matrix is solveable")
-        solve_path = solve_puzzle(start_matrix, heuristics)
+    solve_path: list[Node] = solve_puzzle(start_matrix, heuristics)
 
-        print(f"solved in {len(solve_path)} steps")
+    print(f"solved in {len(solve_path)} steps")
 
-        for node in solve_path:
-            print(f"step: {node.step}\n{node.board}\n")
+    for node in solve_path:
+        print(f"step: {node.step}\n{node.board}\n")
 
 
-def compare_heuristics(heuristics: list[callable], puzzle_size_edge: int) -> None:
+def compare_heuristics(heuristics: list[FunctionType], puzzle_size_edge: int) -> None:
     """
     Compare the performance of multiple heuristics on a series of random puzzles.
 
     Args:
-        heuristics (list[callable]): A list of heuristic functions to compare.
+        heuristics (list[FunctionType]): A list of heuristic functions to compare.
         puzzle_size_edge (int): The edge length of the puzzles.
 
     Output:
@@ -418,8 +428,7 @@ def compare_heuristics(heuristics: list[callable], puzzle_size_edge: int) -> Non
     start_matrices = []
     while len(start_matrices) < board_amount:
         m = generate_start_state(puzzle_size_edge)
-        if puzzle_solvable(m):
-            start_matrices.append(m)
+        start_matrices.append(m)
 
     heuristic_names = []
     runtimes = [[] for _ in range(len(heuristics))]
@@ -458,7 +467,7 @@ Queued Nodes                    mean: {statistics.mean(queued_nodes[0]):.0f}\t\t
     )
 
 
-def main(puzzle_size_edge: int = 3) -> None:
+def main(puzzle_size_edge: int = 3, *, only_solveable: bool = True) -> None:
     """
     Handle the core logic for solving the sliding puzzle game.
 
@@ -472,6 +481,8 @@ def main(puzzle_size_edge: int = 3) -> None:
         and nodes expanded/queued.
 
     Args:
+        only_solveable (bool):  Reroll unsolvable starting matrix until solveable.
+                                Works only if solving single puzzle. Defaults to True.
         puzzle_size_edge (int, optional): The edge length of the puzzle. Defaults to 3.
 
     Raises:
@@ -488,6 +499,7 @@ def main(puzzle_size_edge: int = 3) -> None:
     match int(input()):
         case 1:
             heuristics = hamming
+
         case 2:
             heuristics = manhattan
         case 9:
@@ -500,7 +512,10 @@ def main(puzzle_size_edge: int = 3) -> None:
         compare_heuristics(heuristics, puzzle_size_edge)
 
     else:
-        solve_single_puzzle(heuristics)
+        if not only_solveable:
+            global ONLY_SOLVABLE
+            ONLY_SOLVABLE = only_solveable
+        solve_single_puzzle(heuristics, puzzle_size_edge)
 
 
-main(3)
+main(3, only_solveable=True)

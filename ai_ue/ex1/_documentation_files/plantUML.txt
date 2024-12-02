@@ -1,5 +1,4 @@
 @startuml
-!theme plain
 class Node {
     - parent: Node
     - board: np.matrix
@@ -11,42 +10,42 @@ class Node {
     __eq__(other: Node): bool
 }
 
-class PuzzleGeneration {
+
+object PuzzleGenerators {
     + generate_start_state(puzzle_size_edge: int): np.matrix
     + generate_goal_state(puzzle_size_edge: int): None
     + initial_state(puzzle_size_edge: int): np.matrix
 }
 
-class Validation {
+object Validators {
     + get_inv_count(arr: np.ndarray): int
     + puzzle_solvable(matrix: np.matrix): bool
 }
 
-class Heuristics {
+object Heuristics {
     + hamming(matrix: np.matrix): int
     + manhattan(matrix: np.matrix): int
 }
 
-class Utility {
+object Utility {
     + swap(matrix: np.matrix, row1: int, col1: int, row2: int, col2: int): np.matrix
     + calc_cost(next_move: np.matrix, heuristic: callable): int
     + get_next_moves(parent: Node): list[np.matrix]
     + create_node(parent: Node, move: np.matrix, heuristic: callable): Node
 }
 
-class Solver {
+object Solver {
     + solve_puzzle(initial_matrix: np.matrix, heuristic: callable): list[Node] | tuple[int, int, int]
     + solve_single_puzzle(heuristics: callable, puzzle_size_edge: int): None
     + compare_heuristics(heuristics: list[callable], puzzle_size_edge: int): None
     + main(puzzle_size_edge: int): None
 }
 
-PuzzleGeneration --> Node : uses
-Validation --> PuzzleGeneration : depends on
-Heuristics --> Validation : uses
+
+Solver --> Node : uses
+PuzzleGenerators--> Validators: uses
 Utility --> Node : operates on
-Solver --> Utility : relies on
-Solver --> Heuristics : utilizes
-Solver --> Validation : depends on
-Solver --> PuzzleGeneration : initializes
+Solver --> Utility : uses
+Solver --> Heuristics : uses
+Solver --> PuzzleGenerators: initializes
 @enduml
