@@ -79,5 +79,13 @@ Provides supportive functionalities for core operations:
 
 ## 5. Discussions
 
+### Experiences
+
+### Heuristic comparisons
+
+### Possible improvements
+
+- Variable amount of puzzles to get solve path for
+
 - Admissible Heuristic:
 - How to see which heuristic is better: Highest cost while still admissible

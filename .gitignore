@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# VS Code crap
+.vscode
+*.code-workspace
+
 # C extensions
 *.so
 
@@ -123,7 +127,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/
