@@ -22,11 +22,11 @@ exclude = [
 
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.12"
 scikit-learn = "^1.6.0"
 matplotlib = "^3.9.3"
 keras = "^3.7.0"
-#tensorflow="^2.18.0"
+tensorflow = "^2.18.0"
 jupyter = "^1.1.1"
 
 
