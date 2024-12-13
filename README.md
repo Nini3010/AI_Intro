@@ -21,7 +21,7 @@ sadly tensorflow needs Python 3.12
 
 ### .venv in project folder
 
-`poetry config virtualenvs.in-project`
+`poetry config virtualenvs.in-project = true`
 
 further config: \
 https://python-poetry.org/docs/configuration/
