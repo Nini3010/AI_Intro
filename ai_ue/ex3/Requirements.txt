@@ -1,0 +1,9 @@
+tensorflow[and-cuda]=2.15
+keras=2.15
+matplotlib
+numpy
+pyqt5
+scikit-learn
+visualkeras
+tensorboard
+keras-visualizer
