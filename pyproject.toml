@@ -34,6 +34,11 @@ jupyter = "^1.1.1"
 #]
 #tensorflow-intel = { version = "^2.18.0", platform = "win32" }
 tensorflow-intel = { version = "^2.18.0", platform = "win32" }
+visualkeras = "^0.1.4"
+tensorboard = "^2.18.0"
+keras-visualizer = "^3.2.0"
+pyqt5 = "=5.15.10"
+pyqt5-qt5 = "=5.15.2"
 
 
 [tool.poetry.group.dev.dependencies]
